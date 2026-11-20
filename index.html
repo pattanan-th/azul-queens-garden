@@ -1,0 +1,667 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#14171c">
+<title>Azul Queen's Garden — Referee</title>
+<style>
+/* ===== Theme: dark by default, light if the phone is in light mode ===== */
+:root{--bg:#14171c;--card:#1e232b;--card2:#272d37;--tx:#eef1f5;--mut:#9aa5b4;--ln:#323a46;--ac:#4cc2a5;--ac2:#0f3d33;--bad:#ff6b6b;--warn:#f5b942;--r:14px}
+@media (prefers-color-scheme:light){:root{--bg:#f3f5f7;--card:#fff;--card2:#e9edf1;--tx:#171b21;--mut:#5b6674;--ln:#d3d9e0;--ac:#0a8a6e;--ac2:#d6f1ea;--bad:#c62828;--warn:#9a6700}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif}
+body{padding:0 12px 96px;max-width:640px;margin:0 auto}
+h1{font-size:17px;margin:0}h2{font-size:17px;margin:18px 0 8px}h3{font-size:15px;margin:12px 0 6px}
+.top{position:sticky;top:0;z-index:5;background:var(--bg);display:flex;gap:6px;align-items:center;padding:10px 0;border-bottom:1px solid var(--ln)}
+.top h1{flex:1}
+.card{background:var(--card);border:1px solid var(--ln);border-radius:var(--r);padding:12px;margin:10px 0}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.grow{flex:1}
+/* big touch targets: min 48px (mini buttons 44px) */
+button,input,select{font:inherit;color:inherit}
+button{min-height:48px;min-width:48px;padding:8px 14px;border-radius:12px;border:1px solid var(--ln);background:var(--card2);cursor:pointer}
+button:active{transform:scale(.97)}
+button.pri{background:var(--ac);color:#04231c;border-color:var(--ac);font-weight:700}
+button.dng{background:transparent;color:var(--bad);border-color:var(--bad)}
+button.sel{outline:3px solid var(--ac);background:var(--ac2)}
+button.mini{min-height:44px;min-width:44px;padding:4px 8px}
+button:disabled{opacity:.4}
+input[type=text],input[type=number],input[type=search]{width:100%;min-height:48px;padding:8px 12px;border-radius:12px;border:1px solid var(--ln);background:var(--bg)}
+input[type=checkbox]{width:26px;height:26px;accent-color:var(--ac)}
+.nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--card);border-top:1px solid var(--ln);padding-bottom:env(safe-area-inset-bottom);z-index:6}
+.nav button{flex:1;border:0;border-radius:0;background:transparent;min-height:60px;font-size:13px;padding:4px 2px;min-width:0}
+.nav button.on{color:var(--ac);font-weight:700;box-shadow:inset 0 3px 0 var(--ac)}
+.dot{display:inline-block;width:14px;height:14px;border-radius:50%;vertical-align:-2px;margin-right:6px;border:2px solid rgba(255,255,255,.35)}
+.pl{border-left:6px solid var(--c);padding-left:10px}
+.big{font-size:34px;font-weight:800;line-height:1}
+.mut{color:var(--mut);font-size:14px}
+.warn{color:var(--warn)}
+.ref{display:inline-block;font-size:11px;padding:1px 6px;border-radius:8px;background:var(--card2);color:var(--mut);margin:0 2px;border:1px solid var(--ln)}
+.u{color:var(--warn);font-weight:700}
+.chip{min-height:44px;border-radius:22px;padding:6px 12px}
+.used{opacity:.45}
+.sw{display:inline-block;width:18px;height:18px;border-radius:5px;vertical-align:-3px;margin-right:4px;border:1px solid rgba(255,255,255,.4)}
+table{width:100%;border-collapse:collapse;font-size:14px}td,th{border-bottom:1px solid var(--ln);padding:6px 4px;text-align:left;vertical-align:top}
+.log{max-height:300px;overflow:auto}.log div{padding:6px 0;border-bottom:1px solid var(--ln);font-size:14px}
+.pos{color:var(--ac);font-weight:700}.neg{color:var(--bad);font-weight:700}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:20;padding:20px}
+.modal .box{background:var(--card);border:1px solid var(--ln);border-radius:var(--r);padding:18px;max-width:440px;width:100%;max-height:90vh;overflow:auto}
+details{border-bottom:1px solid var(--ln);padding:8px 0}summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-weight:600}
+.ok{color:var(--ac)}
+.banner{background:var(--ac2);border:1px solid var(--ac);border-radius:12px;padding:8px 12px;margin-top:10px;font-size:14px}
+/* --- dispute checker: 7 pointy-top hexagons --- */
+.flower{position:relative;width:270px;height:260px;margin:8px auto}
+.hx{position:absolute;width:90px;height:104px;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);display:flex;flex-direction:column;align-items:center;justify-content:center;border:0;border-radius:0;padding:0;font-size:13px;font-weight:700;color:#fff;text-shadow:0 1px 2px #000;background:var(--card2)}
+.hx.empty{color:var(--mut);text-shadow:none}
+.hx.el{background:repeating-linear-gradient(45deg,#6b5b3e,#6b5b3e 8px,#8a7650 8px,#8a7650 16px)}
+.hx.on{filter:brightness(1.35) drop-shadow(0 0 0 #fff)}
+.hx .s{font-size:24px;line-height:1}
+.ring{position:absolute;width:98px;height:112px;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);background:var(--ac)}
+.verdict{font-size:20px;font-weight:800;margin:6px 0}
+.steps{display:flex;gap:4px;overflow-x:auto;padding-bottom:4px}
+.steps button{min-width:44px;min-height:44px;padding:2px 8px;font-size:13px;flex:0 0 auto}
+.gchip{display:inline-flex;align-items:center;gap:6px;background:var(--card2);border:1px solid var(--ln);border-radius:20px;padding:2px 4px 2px 12px;margin:4px 4px 0 0;font-size:14px}
+.gchip button{min-height:36px;min-width:36px;padding:0;border-radius:18px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="modal"></div>
+
+<script>
+/* =====================================================================
+   Azul: Queen's Garden — Referee + Score Tracker (single file)
+   Every rule shown in the UI carries a reference code (R-xxx) that points
+   to the matching line in RULES.md. Items that RULES.md marks UNVERIFIED
+   are flagged with ⚠ in the UI.
+   Only external code: PeerJS, loaded lazily from unpkg *only* when the
+   optional "view on other phones" feature is used.
+   ===================================================================== */
+
+/* ---------- Static data ---------- */
+const KEY = 'azulqg.v2';
+const PEER_URL = 'https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';
+const PCOL = [ // player colors (identification only)
+  {n:'แดง',h:'#e5484d'},{n:'น้ำเงิน',h:'#3e63dd'},{n:'เขียว',h:'#30a46c'},
+  {n:'ส้ม',h:'#f5a623'},{n:'ม่วง',h:'#8e4ec6'},{n:'ฟ้าเขียว',h:'#12a594'}];
+// 6 tile colors in evaluation-track order (R-C3, R-E4)
+const COLORS = [
+  {id:'c1',n:'ฟ้า',h:'#2bb3d6'},{id:'c2',n:'ม่วงเข้ม',h:'#4a1d8f'},{id:'c3',n:'ม่วงอ่อน',h:'#b79be0'},
+  {id:'c4',n:'เหลือง',h:'#e0a800'},{id:'c5',n:'เขียวอ่อน',h:'#6cc24a'},{id:'c6',n:'เขียวเข้ม',h:'#0b6b3a'}];
+// 6 patterns: value = cost = points (R-C2). Names of 5/6 UNVERIFIED -> symbols + numbers.
+const PATS = [
+  {id:'p1',n:'ต้นไม้',s:'🌳',v:1},{id:'p2',n:'นก',s:'🕊',v:2},{id:'p3',n:'ผีเสื้อ',s:'🦋',v:3},
+  {id:'p4',n:'ดอกไม้',s:'🌸',v:4},{id:'p5',n:'ลาย 5',s:'🌿',v:5},{id:'p6',n:'ลาย 6',s:'✿',v:6}];
+const col = id => COLORS.find(c=>c.id===id);
+const pat = id => PATS.find(p=>p.id===id);
+const patByV = v => PATS[v-1];
+const itemName = id => col(id) ? `<span class="sw" style="background:${col(id).h}"></span>${col(id).n}` : `${pat(id).s} ${pat(id).n} (${pat(id).v})`;
+
+/* Score presets: label, default signed amount, rule ref, unverified flag */
+const PRESETS = [
+  {k:'wheel',  t:'แต้มตาม wheel',        d:+1, r:'R-W2', u:1},
+  {k:'pav',    t:'Pavilion (+1 ต่ออัน)', d:+1, r:'R-W4'},
+  {k:'first',  t:'Pass คนแรก',           d:-1, r:'R-D3'},
+  {k:'disc',   t:'ทิ้งตอน Pass',          d:-1, r:'R-D2'},
+  {k:'buy',    t:'ซื้อ Expansion',        d:-6, r:'R-X1'},
+  {k:'joker',  t:'จบเกม: Joker เหลือ',    d:+1, r:'R-E2'},
+  {k:'stor',   t:'จบเกม: ของเหลือใน Storage', d:-1, r:'R-E2'},
+  {k:'grp',    t:'จบเกม: Group ≥3',       d:+3, r:'R-E4'},
+  {k:'bonus',  t:'Bonus group',           d:+6, r:'R-E5'},
+  {k:'oth',    t:'อื่น ๆ',                d:+1, r:''}];
+
+/* Referee FAQ — each entry cites RULES.md ids. u:1 => depends on an UNVERIFIED item */
+const FAQ = [
+ {q:'วาง tile ติดกับ hexagon อื่นได้เมื่อไหร่?',a:'ช่องว่างต้อง (ก) ไม่ติดกับ hexagon ใดเลย หรือ (ข) ติดกับ hexagon อย่างน้อย 1 อัน โดย pattern หรือ color ของ tile ที่วางต้องตรงกับอย่างน้อยหนึ่งอันที่ติดกัน — ใช้แท็บ "ตัดสิน" เช็กได้',r:['R-P5']},
+ {q:'วาง 2 tile ที่ตรงทั้ง color และ pattern ติดกันได้ไหม? (same color AND pattern)',a:'ไม่ได้ ห้ามสร้างหรือต่อ group ที่จะมี hexagon ซ้ำกัน 2 อัน (pattern เดียวกัน + color เดียวกัน) ไม่ว่าจะติดกันตรง ๆ หรือเชื่อมผ่าน hexagon อื่น',r:['R-P7']},
+ {q:'Group คืออะไร?',a:'hexagon ติดกันอย่างน้อย 2 อันที่มี pattern เหมือนกัน หรือ color เหมือนกัน "แต่ไม่ใช่ทั้งสองอย่าง" hexagon 1 อันอยู่ได้ทั้ง group ของ pattern และ group ของ color',r:['R-P6']},
+ {q:'จ่ายค่า cost ในการวางยังไง?',a:'cost = ค่าของ pattern (1–6) ทิ้ง hexagon จาก storage ให้ครบจำนวนนั้น รวม tile ที่จะวาง โดยทุกอันที่ทิ้งต้อง pattern เดียวกัน (ต่าง color) หรือ color เดียวกัน (ต่าง pattern) และห้ามมี hexagon เหมือนกันทุกประการ',r:['R-P1','R-P2']},
+ {q:'ใช้ Joker ยังไง?',a:'Joker แทน hexagon ที่ต้องจ่ายได้ 1 อันต่อ 1 Joker แต่ต้องมี hexagon ที่จะวางจริง ๆ (วาง Joker ลง garden ไม่ได้) Joker ที่ใช้คืน supply',r:['R-P4']},
+ {q:'ได้ Joker เมื่อไหร่ และได้กี่อัน?',a:'เมื่อล้อม fountain / statue / bench / pavilion ครบทุกด้าน ได้ Joker ใส่ storage ทันที ถ้าที่ไม่พอ Joker ส่วนเกินหาย จำนวนตามไอคอนในคู่มือ (เห็น 1, 2, 2, 3 ตามลำดับในหน้า 5) — ⚠ การจับคู่ไอคอนกับชิ้นส่วนยังไม่ยืนยัน',r:['R-J1','R-J2'],u:1},
+ {q:'Joker มีจำกัดไหม?',a:'ไม่จำกัด ถ้า supply หมดให้ใช้ของแทน',r:['R-C5']},
+ {q:'Storage จุได้เท่าไหร่?',a:'tile 12 ช่อง และ garden expansion 2 ช่อง ถ้าหยิบทั้งชุดแล้วไม่พอ จะเลือกชุดนั้นไม่ได้',r:['R-A3']},
+ {q:'หยิบ tile ยังไง (Acquire)?',a:'เลือก pattern หรือ color หนึ่งอย่างจาก display area แล้วหยิบ tile และ expansion "ทั้งหมด" ของอย่างนั้น (pattern → ต่าง color / color → ต่าง pattern) ถ้ามี hexagon เหมือนกันเป๊ะหลายอัน หยิบได้แค่หนึ่ง',r:['R-A1','R-A2']},
+ {q:'หลังหยิบ tile ต้องทำอะไรต่อ?',a:'ถ้าหยิบ tile จากกอง round ปัจจุบัน ให้ย้าย expansion บนสุด (พร้อม tile ที่เหลือ) ออกมา display แล้วเติม expansion ใหม่บนสุดด้วย tile 4 อันจากถุง expansion ที่ว่างใน display ให้พลิกหงายและหยิบได้',r:['R-A4','R-A5']},
+ {q:'วาง Garden Expansion ได้ 2 แบบอะไรบ้าง?',a:'(1) เลือกจาก storage แล้วจ่าย cost แบบ tile หรือ (2) หยิบแผ่นคว่ำ (7 ช่อง) จาก supply โดยจ่าย 6 แต้มพอดี (คะแนนห้ามติดลบ) วางรอบ fountain board หมุนได้ตามต้องการ และใช้กฎวางเหมือน tile',r:['R-X1','R-X2']},
+ {q:'Pass ได้เมื่อไหร่ และมีผลอะไร?',a:'Pass ได้ถ้าไม่อยากทำอะไรแล้ว และ "ต้อง" Pass ถ้าทำอะไรไม่ได้ ตอน Pass ทิ้ง hexagon จาก storage ได้ โดยเสียแต้มเท่าค่าของแต่ละอัน คนแรกที่ Pass ได้ first player marker และ −1 แต้ม',r:['R-D1','R-D2','R-D3']},
+ {q:'Penalty ทั้งหมดมีอะไรบ้าง? (smashed tile?)',a:'ในคู่มือไม่มี "smashed tile" Penalty จริง: Pass คนแรก −1, ทิ้งตอน Pass −ค่า pattern, ซื้อ expansion −6, จบเกมของเหลือใน storage −ค่า pattern',r:['R-D2','R-D3','R-X1','R-E2']},
+ {q:'ให้คะแนนจบรอบ (Phase 2) ยังไง?',a:'Wheel แสดง pattern/color ที่ให้คะแนน 3 อย่างในรอบนี้ hexagon ใน garden ที่ตรงได้แต้ม (ใบเดียวนับได้ 2 ครั้ง: pattern และ color) แล้วได้ +1 ต่อ pavilion ที่มองเห็น ⚠ คู่มือไม่ได้ระบุแต้มต่อใบ — แอปตั้งค่าเริ่มต้นเป็น "ค่า pattern" และสลับเป็น "ตามตัวเลขบนกระดาน" ได้',r:['R-W1','R-W2','R-W3','R-W4'],u:1},
+ {q:'Wheel แต่ละรอบให้คะแนนอะไร?',a:'⚠ คู่มือไม่ได้ลิสต์ไว้ ให้ดูจาก wheel จริงบนกระดาน แล้วเลือกบันทึกไว้ในแท็บ "เกม"',r:['R-W5'],u:1},
+ {q:'สี/pattern เดียวกันได้คะแนนจาก wheel ได้กี่รอบ?',a:'⚠ อนุมานจากภาพกระดาน: วงรอบ wheel มี 12 ช่อง (6 สี + 6 pattern) wheel ชี้ 3 ช่องต่อรอบ × 4 รอบ = 12 จึงน่าจะได้คะแนนอย่างละครั้งเดียวต่อเกม แอปจะทำสีจางให้สิ่งที่เลือกไปแล้วในรอบก่อน',r:['R-W7'],u:1},
+ {q:'เตรียมรอบถัดไป (Phase 3) ทำอะไรบ้าง?',a:'หมุน wheel ตามเข็มนาฬิกา, ทิ้ง tile ที่เหลือบน expansion คว่ำใน display ลง tower, คืน expansion ที่เหลือคว่ำเข้า supply, วางกอง round ถัดไปแล้วเติม 4 tile, เจ้าของ first player marker วางมันแล้วเริ่มรอบ (ไม่ทำใน round 4)',r:['R-R3']},
+ {q:'ถุง tile หมดทำยังไง?',a:'เอา tile ใน tower กลับใส่ถุง ถ้ายังไม่พอ เล่นต่อด้วย tile น้อยลงหรือไม่มีเลย ถ้าไม่มีเลย expansion ว่างทั้งหมดในกอง round นั้นหงายขึ้นใน display',r:['R-R4']},
+ {q:'จบเกมเมื่อไหร่?',a:'หลังทุกคน Pass ใน round 4 ให้คะแนนจบรอบตามปกติ แล้วคิดคะแนนสุดท้าย',r:['R-E1']},
+ {q:'คะแนนสุดท้ายคิดยังไง?',a:'(1) Storage: Joker เหลือ +1 ต่ออัน, tile/expansion เหลือ −ค่า pattern ต่ออัน (2) ไล่ evaluation track: 6 color แล้ว 6 pattern — group ตั้งแต่ 3 hexagon ขึ้นไปที่ตรงการประเมิน ได้แต้ม = ผลรวมค่า pattern ของแต่ละ hexagon (group 2 ไม่ได้แต้ม) (3) Bonus +6 ต่อ group ที่มี 6 hexagon — แท็บ "จบเกม" พาไล่ทีละขั้น',r:['R-E2','R-E4','R-E5']},
+ {q:'เสมอกันใครชนะ?',a:'ไม่มี tiebreaker — ผู้เล่นที่แต้มเท่ากันสูงสุดชนะร่วมกัน',r:['R-E3']},
+ {q:'Game Variant ต่างยังไง?',a:'กฎเหมือนเดิม ยกเว้น (1) pattern ให้แต้มต่างออกไปใน Phase 2 (2) Bonus group ตอนจบ: 4 ใบ +3, 5 ใบ +5, 6 ใบ +7 ⚠ ค่า Phase 2 ของ variant ไม่ได้พิมพ์ในคู่มือ และต้องยืนยันค่า bonus กับเล่มจริง',r:['R-V1','R-V2','R-V3'],u:1},
+ {q:'"Dual Matching Mode" คืออะไร?',a:'ไม่มีโหมดนี้ในคู่มือ Queen\'s Garden — โหมดเดียวคือ Game Variant ข้างบน',r:['R-V1']},
+ {q:'คะแนนเริ่มต้นเท่าไหร่?',a:'ทุกคนเริ่มที่ช่อง 15 ของ scoring track',r:['R-S3']},
+ {q:'จำนวน expansion ต่อกอง round?',a:'2 คน 5 แผ่น / 3 คน 7 แผ่น / 4 คน 8 แผ่น ต่อกอง (มี 4 กอง) ใครอายุน้อยสุดเริ่มรอบแรก',r:['R-S4','R-S6']}
+];
+
+/* Final-scoring steps: storage, 6 colors, 6 patterns (evaluation track order, R-E4), summary */
+const STEPS = [{k:'st',n:'Storage'}]
+  .concat(COLORS.map(c=>({k:c.id,n:c.n,c})))
+  .concat(PATS.map(p=>({k:p.id,n:p.s+p.v,p})))
+  .concat([{k:'sum',n:'สรุป'}]);
+
+/* ---------- State ---------- */
+let S = null;      // persisted game state (null => setup screen)
+let D = {};        // transient drafts (input values / builders), not persisted
+let T = 'game';    // current tab
+let V = false;     // viewer (read-only) mode for multi-device
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const refs = a => (a||[]).map(r => `<span class="ref">${r}</span>`).join('');
+const sum = a => a.reduce((x,y)=>x+y,0);
+
+/* Persistence — always try/catch (private mode, blocked storage, etc.) */
+function load(){ try{ const j = localStorage.getItem(KEY); return j ? JSON.parse(j) : null; }catch(e){ return null; } }
+function save(){
+  if (V) return;                       // viewers never write
+  try{ localStorage.setItem(KEY, JSON.stringify(S)); D.saveErr = false; }catch(e){ D.saveErr = true; }
+  broadcast();                         // push to connected viewers (if hosting)
+}
+/* Undoable mutations go through commit(): snapshot, mutate, save, render */
+function commit(fn){
+  const snap = JSON.stringify(Object.assign({}, S, {hist:undefined}));
+  S.hist.push(snap); if (S.hist.length > 60) S.hist.shift();
+  fn(); save(); render();
+}
+/* Small, frequent edits (tally taps, group builders) save without an undo snapshot; they have their own ⌫ */
+function quick(fn){ fn(); save(); render(); }
+function undo(){
+  if (!S || !S.hist.length) return;
+  const prev = JSON.parse(S.hist.pop()); prev.hist = S.hist; prev.room = S.room; S = prev; save(); render();
+}
+function addLog(p, d, reason, ref){
+  S.players[p].score += d;
+  S.log.push({p, d, reason, ref: ref||'', round: S.round, t: Date.now()});
+}
+const nm = i => `<span class="dot" style="background:${S.players[i].color}"></span>${esc(S.players[i].name)}`;
+
+/* Value "tap builder": list of pattern values entered by tapping 1–6 */
+function builderBtns(action, key, allowed, disabledVals){
+  return allowed.map(v=>`<button class="mini" data-a="${action}" data-v="${key}|${v}" ${disabledVals&&disabledVals.includes(v)?'disabled':''}>${patByV(v).s}${v}</button>`).join('');
+}
+
+/* ---------- Setup ---------- */
+function newDraft(n){
+  const old = D.setup;
+  D.setup = {n, names:[], cols:[], start:0, variant:false};
+  for (let i=0;i<4;i++){ D.setup.names[i] = old ? old.names[i] : ''; D.setup.cols[i] = old ? old.cols[i] : i; }
+  if (old) D.setup.variant = old.variant;
+}
+function startGame(){
+  const s = D.setup, n = s.n, players = [];
+  for (let i=0;i<n;i++) players.push({name:(s.names[i]||'').trim() || 'ผู้เล่น '+(i+1), color:PCOL[s.cols[i]].h, score:15}); // R-S3
+  S = {v:2, variant:s.variant, players, round:1, phase:'play', first:s.start, turn:s.start,
+       passed:players.map(()=>false), firstPassed:false, wheel:{1:[],2:[],3:[],4:[]},
+       ptsMode: s.variant ? 'board' : 'pattern', itemPts:{}, tally:{},
+       roundDone:players.map(()=>false), pendDiscard:null, log:[], hist:[],
+       fin:{step:0, st:players.map(()=>({j:0,left:[]})), g:players.map(()=>({}))},
+       endDone:players.map(()=>false)};
+  T='game'; save(); render();
+}
+function viewSetup(){
+  if (!D.setup) newDraft(2);
+  const s = D.setup;
+  let h = `<div class="top"><h1>Azul: Queen's Garden</h1></div>
+  <div class="card"><h2 style="margin-top:0">ตั้งค่าเกม</h2>
+  <div class="mut">จำนวนผู้เล่น <span class="ref">R-S4</span></div>
+  <div class="row" style="margin:8px 0">${[2,3,4].map(n=>`<button class="grow ${s.n==n?'sel':''}" data-a="setN" data-v="${n}">${n} คน</button>`).join('')}</div>
+  <div class="mut">ใส่ชื่อ/สี ตามลำดับที่นั่งตามเข็มนาฬิกา <span class="ref">R-R2</span></div>`;
+  for (let i=0;i<s.n;i++){
+    h += `<div class="card" style="margin:8px 0"><input type="text" placeholder="ชื่อผู้เล่น ${i+1}" value="${esc(s.names[i])}" data-in="setupName" data-i="${i}">
+    <div class="row" style="margin-top:8px">${PCOL.map((c,k)=>`<button class="chip ${s.cols[i]==k?'sel':''}" style="border-color:${c.h}" data-a="setCol" data-v="${i},${k}"><span class="sw" style="background:${c.h}"></span>${c.n}</button>`).join('')}</div></div>`;
+  }
+  h += `<div class="mut">ใครเริ่มรอบแรก (อายุน้อยที่สุด) <span class="ref">R-S6</span></div>
+  <div class="row" style="margin:8px 0">${Array.from({length:s.n},(_,i)=>`<button class="grow ${s.start==i?'sel':''}" data-a="setStart" data-v="${i}">${esc(s.names[i]||'ผู้เล่น '+(i+1))}</button>`).join('')}</div>
+  <label class="row" style="margin:10px 0"><input type="checkbox" data-in="variant" ${s.variant?'checked':''}> <span>Game Variant <span class="ref">R-V1</span><span class="u">⚠</span> <span class="mut">(แต้ม Phase 2 กรอกตามกระดาน)</span></span></label>
+  <div id="seterr" class="warn"></div>
+  <button class="pri" style="width:100%;min-height:56px" data-a="start">เริ่มเกม · ทุกคนเริ่มที่ 15 แต้ม <span class="ref">R-S3</span></button></div>
+  <div class="card"><b>ดูอย่างเดียวจากเครื่องอื่น?</b><div class="mut">ใส่รหัสห้องจากเครื่องกรรมการ</div>
+  <div class="row" style="margin-top:8px"><input type="text" class="grow" style="flex:1" placeholder="รหัสห้อง เช่น k3x9qa" data-in="joinCode" value="${esc(D.joinCode||'')}"><button data-a="join">เข้าดู</button></div></div>
+  <div class="mut">กฎทุกข้อในแอปอ้างอิงรหัส R-xxx ใน RULES.md · ⚠ = ยังไม่ยืนยันกับคู่มือเล่มจริง</div>`;
+  return h;
+}
+
+/* ---------- Game tab (round tracker) ---------- */
+function allPassed(){ return S.passed.every(Boolean); }
+function nextTurn(){ // clockwise, skipping players who have passed (R-D4)
+  const n = S.players.length;
+  for (let k=1;k<=n;k++){ const j = (S.turn+k)%n; if (!S.passed[j]){ S.turn = j; return; } }
+}
+function doPass(i){
+  S.passed[i] = true; S.pendDiscard = i; D.pd = [];
+  if (!S.firstPassed){ // R-D3: first to pass gets first-player marker and -1
+    S.firstPassed = true; S.first = i; addLog(i, -1, 'Pass คนแรก (รับ first player marker)', 'R-D3');
+  }
+  if (allPassed()) S.phase = 'scoring'; else if (S.turn === i) nextTurn();
+}
+function usedBefore(id){ // round in which an item was already picked (R-W7 hint)
+  for (let r=1;r<S.round;r++) if (S.wheel[r].includes(id)) return r;
+  return 0;
+}
+function wheelHtml(){
+  const cur = S.wheel[S.round];
+  const chip = (id,label,sw) => { const u = usedBefore(id);
+    return `<button class="chip ${cur.includes(id)?'sel':''} ${u&&!cur.includes(id)?'used':''}" data-a="wheel" data-v="${id}">${sw?`<span class="sw" style="background:${sw}"></span>`:''}${label}${u?` <small>(ร.${u})</small>`:''}</button>`; };
+  return `<details class="card" ${cur.length<3?'open':''}><summary>Wheel รอบ ${S.round}: ${cur.length?cur.map(itemName).join(' · '):'<span class="warn">&nbsp;ยังไม่ได้เลือก</span>'}</summary>
+  <div class="mut">เลือก 3 อย่างตาม wheel จริง (${cur.length}/3) <span class="ref">R-W1</span><span class="u">⚠R-W5</span> · สีจาง = ใช้ไปแล้วในรอบก่อน <span class="u">⚠R-W7</span></div>
+  <div class="row" style="margin-top:8px">${COLORS.map(c=>chip(c.id,c.n,c.h)).join('')}</div>
+  <div class="row" style="margin-top:6px">${PATS.map(p=>chip(p.id,`${p.s}${p.v}`)).join('')}</div></details>`;
+}
+function discardCard(){ // R-D2: optional discard right after passing
+  const i = S.pendDiscard; if (i===null || i===undefined || !S.players[i]) return '';
+  const pd = D.pd || (D.pd = []);
+  return `<div class="card pl" style="--c:${S.players[i].color}"><b>${nm(i)} Pass แล้ว — ทิ้งของจาก storage ไหม?</b> <span class="ref">R-D2</span>
+  <div class="mut">แตะค่า pattern ของแต่ละชิ้นที่ทิ้ง (tile หรือ expansion) · เสียแต้มเท่าผลรวม</div>
+  <div class="row" style="margin-top:6px">${builderBtns('pdAdd','x',[1,2,3,4,5,6])}<button class="mini" data-a="pdDel">⌫</button></div>
+  <div style="margin:6px 0">${pd.length?pd.join(' + ')+' = <b class="neg">−'+sum(pd)+'</b>':'<span class="mut">ยังไม่ได้เลือก</span>'}</div>
+  <div class="row"><button class="grow" data-a="pdSkip">ไม่ทิ้ง</button><button class="pri grow" data-a="pdGo" ${pd.length?'':'disabled'}>หัก −${sum(pd)}</button></div></div>`;
+}
+/* Round tally (Phase 2) */
+function tal(i){ const k = S.round+'-'+i; return S.tally[k] || (S.tally[k] = {it:{}, pav:0}); }
+function itemPoints(id, arr){ return S.ptsMode==='board' ? arr.length * (parseInt(S.itemPts[id],10)||0) : sum(arr); }
+function roundTotal(i){ const t = tal(i); return sum(S.wheel[S.round].map(id=>itemPoints(id, t.it[id]||[]))) + t.pav; }
+function tallyHtml(i){
+  const t = tal(i), items = S.wheel[S.round], locked = S.roundDone[i];
+  let h = '';
+  items.forEach(id=>{
+    const arr = t.it[id] || [], c = col(id), p = pat(id);
+    const btns = c ? PATS.map(pp=>`<button class="mini" data-a="tAdd" data-v="${i}|${id}|${pp.v}" ${locked?'disabled':''}>${pp.s}${pp.v}</button>`).join('')
+                   : `<button class="mini" data-a="tAdd" data-v="${i}|${id}|${p.v}" ${locked?'disabled':''}>+1 ใบ</button>`;
+    h += `<div style="margin-top:8px"><div class="row"><span class="grow">${itemName(id)} · <b>${arr.length}</b> ใบ = <b>${itemPoints(id,arr)}</b></span><button class="mini" data-a="tDel" data-v="${i}|${id}" ${locked||!arr.length?'disabled':''}>⌫</button></div>
+    <div class="row" style="margin-top:4px">${btns}</div></div>`;
+  });
+  h += `<div class="row" style="margin-top:10px"><span class="grow">Pavilion ที่เห็น <span class="ref">R-W4</span>: <b>${t.pav}</b></span>
+    <button class="mini" data-a="pav" data-v="${i}|-1" ${locked?'disabled':''}>−</button><button class="mini" data-a="pav" data-v="${i}|1" ${locked?'disabled':''}>+</button></div>`;
+  return h;
+}
+function viewGame(){
+  const P = S.players;
+  let h = '';
+  if (S.phase==='play'){
+    const cur = P[S.turn];
+    h += `<div class="card pl" style="--c:${cur.color}"><div class="mut">รอบ ${S.round} / 4 · Phase 1: Players actions</div>
+    <div class="mut">ตาของ</div><div class="big">${nm(S.turn)}</div><div class="mut">${cur.score} แต้ม</div>
+    <div class="mut" style="margin-top:6px">เลือก 1 อย่าง: A) Acquire · B) Place tile · C) Place expansion · D) Pass <span class="ref">R-R1</span></div>
+    <div class="row" style="margin-top:10px"><button class="pri grow" data-a="endturn">จบเทิร์น → คนถัดไป</button>
+    <button class="dng grow" data-a="pass">Pass</button></div>
+    <button style="width:100%;margin-top:8px" data-a="buy" ${cur.score<6?'disabled':''}>ซื้อ expansion คว่ำจาก supply (−6) <span class="ref">R-X1</span></button>
+    ${cur.score<6?'<div class="mut warn">แต้มไม่ถึง 6 — คะแนนห้ามติดลบ จึงซื้อไม่ได้ <span class="ref">R-X1</span></div>':''}</div>`;
+  } else {
+    h += `<div class="card"><div class="mut">รอบ ${S.round} / 4 · Phase 2: Scoring</div><b>ทุกคน Pass แล้ว</b> <span class="ref">R-D4</span> — คิดคะแนนเริ่มจาก ${nm(S.first)}</div>`;
+  }
+  h += discardCard();
+  h += `<div class="card"><b>First player marker:</b> ${nm(S.first)} <span class="ref">R-D3</span><div class="row" style="margin-top:8px">
+  ${P.map((p,i)=>`<span class="chip" style="display:inline-flex;align-items:center;border:2px solid ${p.color};opacity:${S.passed[i]?.45:1}">${esc(p.name)} · ${p.score}${S.passed[i]?' · Pass':''}</span>`).join('')}</div></div>`;
+  h += wheelHtml();
+
+  if (S.phase==='scoring'){
+    const items = S.wheel[S.round];
+    h += `<div class="card"><h3 style="margin-top:0">Phase 2: ให้คะแนนจบรอบ ${S.round} <span class="ref">R-W1</span><span class="ref">R-W2</span><span class="ref">R-W4</span></h3>
+    <div class="mut">แตะนับ hexagon ใน garden ที่ตรงกับแต่ละอย่างของ wheel (ใบเดียวนับได้ทั้งสีและ pattern) แล้วนับ pavilion</div>
+    <div class="mut" style="margin-top:8px">แต้มต่อใบ <span class="u">⚠R-W3</span></div>
+    <div class="row" style="margin-top:4px"><button class="grow ${S.ptsMode==='pattern'?'sel':''}" data-a="ptsMode" data-v="pattern">= ค่า pattern (สันนิษฐาน)</button>
+    <button class="grow ${S.ptsMode==='board'?'sel':''}" data-a="ptsMode" data-v="board">ตามเลขบนกระดาน</button></div>`;
+    if (S.ptsMode==='board') h += `<div class="row" style="margin-top:8px">${items.map(id=>`<div class="grow" style="min-width:30%"><div class="mut">${itemName(id)} แต้ม/ใบ</div><input type="number" inputmode="numeric" min="0" value="${esc(S.itemPts[id]||'')}" data-in="ipts" data-id="${id}"></div>`).join('')}</div>`;
+    if (items.length<3) h += `<div class="warn" style="margin-top:8px">เลือก wheel ให้ครบ 3 อย่างก่อน (ด้านบน)</div>`;
+    h += `</div>`;
+    P.map((_,k)=>(S.first+k)%P.length).forEach(i=>{
+      h += `<div class="card pl" style="--c:${P[i].color}"><b>${nm(i)}</b> <span class="mut">(${P[i].score} แต้ม)</span> ${S.roundDone[i]?'<span class="ok">✓ บันทึกแล้ว</span>':''}
+      ${tallyHtml(i)}
+      <button class="pri" style="width:100%;margin-top:10px" data-a="roundScore" data-v="${i}" ${S.roundDone[i]?'disabled':''}>บันทึก +${roundTotal(i)} (รอบ ${S.round})</button></div>`;
+    });
+    if (S.round < 4){
+      h += `<div class="card"><b>Phase 3: เตรียมรอบถัดไป</b> <span class="ref">R-R3</span><ul class="mut"><li>หมุน wheel ตามเข็มนาฬิกา 1 ช่อง</li><li>ทิ้ง tile ที่เหลือบน expansion คว่ำใน display ลง tower; คืน expansion ที่เหลือคว่ำเข้า supply</li><li>วางกอง round ถัดไป เติม 4 tile จากถุง</li><li>${esc(P[S.first].name)} วาง first player marker แล้วเริ่มรอบ</li></ul>
+      ${S.roundDone.every(Boolean)?'':'<div class="warn">ยังบันทึกคะแนนรอบไม่ครบทุกคน</div>'}
+      <button class="pri" style="width:100%" data-a="nextRound">เริ่มรอบ ${S.round+1}</button></div>`;
+    } else {
+      h += `<button class="pri" style="width:100%;min-height:56px" data-a="toEnd">ไปคิดคะแนนสุดท้าย <span class="ref">R-E1</span></button>`;
+    }
+  }
+  return h;
+}
+
+/* ---------- Score tab ---------- */
+function viewScore(){
+  const P = S.players;
+  const d = D.sc || (D.sc = {p:0, amt:'1', sign:1, key:'wheel', label:''});
+  const pr = PRESETS.find(x=>x.k===d.key);
+  let h = `<div class="card"><h3 style="margin-top:0">คะแนนรวม</h3>
+  ${P.map((p,i)=>`<div class="row pl" style="--c:${p.color};padding:6px 0 6px 10px"><b class="grow">${nm(i)}</b><span class="big">${p.score}</span></div>`).join('')}</div>`;
+  if (!V) h += `<div class="card"><h3 style="margin-top:0">เพิ่ม/ลดคะแนนเอง</h3>
+  <div class="row">${P.map((p,i)=>`<button class="chip grow ${d.p==i?'sel':''}" style="border-color:${p.color}" data-a="scP" data-v="${i}">${esc(p.name)}</button>`).join('')}</div>
+  <div class="mut" style="margin-top:10px">เหตุผล (กดแล้วตั้งค่าเริ่มต้นให้)</div>
+  <div class="row" style="margin-top:6px">${PRESETS.map(x=>`<button class="chip ${d.key===x.k?'sel':''}" data-a="scK" data-v="${x.k}">${x.t}</button>`).join('')}</div>
+  <div class="mut" style="margin-top:6px">${pr.r?`กฎ: <span class="ref">${pr.r}</span>${pr.u?'<span class="u">⚠</span>':''}`:'ระบุเหตุผลเอง (ไม่มีกฎอ้างอิง)'}</div>
+  ${d.key==='oth'?`<input type="text" placeholder="ระบุเหตุผล" value="${esc(d.label)}" data-in="scLabel" style="margin-top:8px">`:''}
+  <div class="row" style="margin-top:10px">
+    <button class="${d.sign>0?'sel':''}" data-a="scS" data-v="1" style="min-width:64px">＋</button>
+    <button class="${d.sign<0?'sel':''}" data-a="scS" data-v="-1" style="min-width:64px">−</button>
+    <input type="number" inputmode="numeric" min="0" value="${esc(d.amt)}" data-in="scAmt" style="flex:1;font-size:22px;text-align:center"></div>
+  <div class="row" style="margin-top:8px">${[1,2,3,4,5,6].map(n=>`<button class="grow" data-a="scN" data-v="${n}">${n}</button>`).join('')}</div>
+  <button class="pri" style="width:100%;margin-top:10px;min-height:56px" data-a="scGo">บันทึก ${d.sign>0?'+':'−'}${esc(d.amt||0)} ให้ ${esc(P[d.p].name)}</button>
+  <div class="mut" style="margin-top:6px">ปกติแท็บเกม/จบเกมจะบันทึกให้อัตโนมัติ ใช้ตรงนี้เมื่อต้องแก้หรือมีกรณีพิเศษ · คะแนนติดลบกรณีอื่นนอกจากซื้อ expansion <span class="u">⚠O3</span></div></div>`;
+  h += `<div class="card"><div class="row"><h3 style="margin:0" class="grow">ประวัติ (Log)</h3>${V?'':`<button data-a="undo" ${S.hist&&S.hist.length?'':'disabled'}>↶ Undo</button>`}</div>
+  <div class="log">${S.log.length?S.log.slice().reverse().map(l=>`<div><b>${nm(l.p)}</b> <span class="${l.d>=0?'pos':'neg'}">${l.d>=0?'+':''}${l.d}</span> — ${esc(l.reason)} ${l.ref?`<span class="ref">${l.ref}</span>`:''}<span class="mut"> · รอบ ${l.round}</span></div>`).join(''):'<div class="mut">ยังไม่มีรายการ</div>'}</div></div>`;
+  return h;
+}
+
+/* ---------- Dispute tab: 7-hex local legality checker (R-P5, R-P7) ---------- */
+// Pointy-top layout: center + 6 neighbours (offsets in px inside a 270x260 box)
+const DZPOS = {c:[90,78], n0:[135,0], n1:[180,78], n2:[135,156], n3:[45,156], n4:[0,78], n5:[45,0]};
+function dz(){ if (!D.dz){ D.dz = {sel:'c', c:{}}; for (let k=0;k<6;k++) D.dz['n'+k] = {t:'empty'}; } return D.dz; }
+function hexDesc(x){ return `${col(x.col).n} ${pat(x.pat).s}${pat(x.pat).v}`; }
+function judge(){
+  const z = dz(), t = z.c;
+  if (!t.col || !t.pat) return {v:'?', msg:['เลือกสีและ pattern ของ tile ที่จะวาง (ช่องกลาง)']};
+  const nb = [0,1,2,3,4,5].map(k=>z['n'+k]).filter(x=>x.t==='hex' && x.col && x.pat);
+  if (!nb.length) return {v:'ok', msg:['ไม่ติด hexagon ใดเลย → วางได้ (R-P5 ก)']};
+  if (!nb.some(n=>n.col===t.col || n.pat===t.pat)) return {v:'no', msg:['ติด hexagon แต่ไม่มีอันไหนสีหรือ pattern ตรงกับ tile ที่วาง (R-P5 ข)']};
+  const same = nb.filter(n=>n.col===t.col && n.pat===t.pat);
+  if (same.length) return {v:'no', msg:[`ติดกับ ${hexDesc(t)} ที่เหมือนกันทุกอย่าง → ห้าม (R-P7)`]};
+  const colN = nb.filter(n=>n.col===t.col), patN = nb.filter(n=>n.pat===t.pat);
+  const dupIn = (arr, key) => { const seen = {}; for (const n of arr){ if (seen[n[key]]) return n; seen[n[key]] = 1; } return null; };
+  const d1 = dupIn(colN,'pat'), d2 = dupIn(patN,'col');
+  if (d1) return {v:'no', msg:[`จะเชื่อม group สี${col(t.col).n} ที่มี ${hexDesc(d1)} 2 ใบ → ห้าม (R-P7)`]};
+  if (d2) return {v:'no', msg:[`จะเชื่อม group ${pat(t.pat).s}${pat(t.pat).v} ที่มี ${hexDesc(d2)} 2 ใบ → ห้าม (R-P7)`]};
+  const msg = ['มีเพื่อนบ้านที่สีหรือ pattern ตรง และไม่มี hexagon ซ้ำใน 7 ช่องนี้ (R-P5, R-P7)'];
+  const joins = [];
+  if (colN.length) joins.push(`group สี${col(t.col).n}`);
+  if (patN.length) joins.push(`group ${pat(t.pat).s}${pat(t.pat).v}`);
+  if (joins.length) msg.push(`เช็กต่อด้วยตา: ${joins.join(' และ ')} ที่ต่อยาวออกไปนอก 7 ช่องนี้ ต้องไม่มี ${hexDesc(t)} อยู่แล้ว ถ้ามี = ห้าม (R-P7)`);
+  return {v:'ok', msg};
+}
+function viewDispute(){
+  const z = dz(), sel = z.sel, cell = z[sel], j = judge();
+  const hex = k => { const x = z[k], [l,tp] = DZPOS[k];
+    let cls = 'hx', inner = '', bg = '';
+    if (k==='c'){ if (x.col) bg = col(x.col).h; inner = `<span class="s">${x.pat?pat(x.pat).s:'?'}</span>${x.pat?pat(x.pat).v:''}<small>วาง</small>`; if(!x.col) cls+=' empty'; }
+    else if (x.t==='el'){ cls += ' el'; inner = '<small>ชิ้นส่วน<br>สวน</small>'; }
+    else if (x.t==='hex' && x.col && x.pat){ bg = col(x.col).h; inner = `<span class="s">${pat(x.pat).s}</span>${pat(x.pat).v}`; }
+    else if (x.t==='hex'){ bg = x.col?col(x.col).h:''; inner = `<span class="s">${x.pat?pat(x.pat).s:'?'}</span><small>ยังไม่ครบ</small>`; if(!x.col) cls+=' empty'; }
+    else { cls += ' empty'; inner = '<small>ว่าง</small>'; }
+    return (k===sel?`<div class="ring" style="left:${l-4}px;top:${tp-4}px"></div>`:'') +
+      `<button class="${cls}" style="left:${l}px;top:${tp}px;${bg?'background:'+bg:''}" data-a="dzSel" data-v="${k}">${inner}</button>`; };
+  const isC = sel==='c';
+  let h = `<div class="card"><h3 style="margin-top:0">⚖ ตัดสินการวาง tile <span class="ref">R-P5</span><span class="ref">R-P7</span></h3>
+  <div class="mut">ช่องกลาง = tile ที่จะวาง · 6 ช่องรอบ = ของที่ติดอยู่ในสวนจริง แตะช่องแล้วเลือกด้านล่าง</div>
+  <div class="flower">${Object.keys(DZPOS).map(hex).join('')}</div>
+  <div class="verdict ${j.v==='ok'?'ok':j.v==='no'?'neg':'mut'}">${j.v==='ok'?'✅ วางได้':j.v==='no'?'⛔ วางไม่ได้':'…'}</div>
+  ${j.msg.map(m=>`<div style="margin:4px 0">${esc(m).replace(/\((R-[A-Z0-9 ,ก-ฮ-]+)\)/g,'<span class="ref">$1</span>')}</div>`).join('')}</div>
+  <div class="card"><b>${isC?'ช่องกลาง (tile ที่จะวาง)':'ช่องรอบที่เลือก'}</b>
+  ${isC?'':`<div class="row" style="margin-top:8px"><button class="grow ${cell.t==='empty'?'sel':''}" data-a="dzT" data-v="empty">ว่าง</button><button class="grow ${cell.t==='el'?'sel':''}" data-a="dzT" data-v="el">ชิ้นส่วนสวน / ขอบ</button><button class="grow ${cell.t==='hex'?'sel':''}" data-a="dzT" data-v="hex">Hexagon</button></div>`}
+  ${isC||cell.t!=='el'?`<div class="mut" style="margin-top:8px">สี</div><div class="row">${COLORS.map(c=>`<button class="chip ${cell.col===c.id?'sel':''}" data-a="dzCol" data-v="${c.id}"><span class="sw" style="background:${c.h}"></span>${c.n}</button>`).join('')}</div>
+  <div class="mut" style="margin-top:8px">Pattern</div><div class="row">${PATS.map(p=>`<button class="chip ${cell.pat===p.id?'sel':''}" data-a="dzPat" data-v="${p.id}">${p.s}${p.v}</button>`).join('')}</div>`:''}
+  <div class="row" style="margin-top:10px"><button class="grow dng" data-a="dzReset">ล้างทั้งหมด</button></div></div>
+  <div class="mut">ตัวเช็กดูได้แค่ 7 ช่อง — group ที่ยาวออกไปนอกนี้ แอปจะเตือนให้เช็กต่อด้วยตา (กฎห้ามมี hexagon ซ้ำใน group, R-P7)</div>`;
+  return h;
+}
+
+/* ---------- Rules tab (referee) ---------- */
+function viewRules(){
+  const q = (D.q||'').toLowerCase().trim();
+  const list = FAQ.filter(f => !q || (f.q+' '+f.a+' '+f.r.join(' ')).toLowerCase().includes(q));
+  let h = `<div class="card"><h3 style="margin-top:0">ค้นหากฎ (Referee Q&A)</h3>
+  <input type="search" placeholder="เช่น joker, pass, group, penalty, tie…" value="${esc(D.q||'')}" data-in="q">
+  <div class="mut" style="margin-top:6px">ทุกคำตอบมีรหัส R-xxx ที่ตรงกับ RULES.md · <span class="u">⚠</span> = ยังไม่ยืนยันกับเล่มจริง</div></div>`;
+  h += `<div class="card"><h3 style="margin-top:0">Quick reference</h3>
+  <table>
+  <tr><th>วาง tile ได้เมื่อ</th><td>ไม่ติด hexagon ใด หรือ pattern/color ตรงกับอย่างน้อย 1 อันที่ติด <span class="ref">R-P5</span></td></tr>
+  <tr><th>ห้าม</th><td>สร้าง/ต่อ group ที่มี hexagon เหมือนกัน 2 อัน (pattern+color เดียวกัน) <span class="ref">R-P7</span></td></tr>
+  <tr><th>Cost</th><td>ค่า pattern 1–6 · จ่ายด้วย pattern เดียวกัน/ต่างสี หรือสีเดียวกัน/ต่าง pattern · Joker แทนได้ <span class="ref">R-P2</span><span class="ref">R-P4</span></td></tr>
+  <tr><th>Storage</th><td>tile 12 ช่อง · expansion 2 ช่อง <span class="ref">R-A3</span></td></tr>
+  <tr><th>คะแนนรอบ</th><td>3 อย่างตาม wheel ต่อ hexagon + 1 ต่อ pavilion <span class="ref">R-W2</span><span class="ref">R-W4</span><span class="u">⚠</span></td></tr>
+  <tr><th>จบเกม</th><td>Joker +1 · ของเหลือ −ค่า · group ≥3 = ผลรวมค่า · bonus group 6 = +6 <span class="ref">R-E2</span><span class="ref">R-E4</span><span class="ref">R-E5</span></td></tr>
+  <tr><th>Penalty</th><td>Pass คนแรก −1 <span class="ref">R-D3</span> · ทิ้งตอน Pass −ค่า <span class="ref">R-D2</span> · ซื้อ expansion −6 <span class="ref">R-X1</span> · ของเหลือจบเกม −ค่า <span class="ref">R-E2</span></td></tr>
+  <tr><th>ค่า pattern</th><td>${PATS.map(p=>`${p.s}${p.n} ${p.v}`).join(' · ')} <span class="ref">R-C2</span><span class="u">⚠ชื่อ 5–6</span></td></tr>
+  </table></div>`;
+  h += `<div class="card"><h3 style="margin-top:0">FAQ (${list.length})</h3>${list.length?list.map(f=>`<details ${q?'open':''}><summary>${f.u?'<span class="u">⚠&nbsp;</span>':''}${esc(f.q)}</summary><div style="padding:4px 0 8px">${esc(f.a)} ${refs(f.r)}</div></details>`).join(''):'<div class="mut">ไม่พบ — ลองคำอื่น หรือดู RULES.md</div>'}</div>`;
+  return h;
+}
+
+/* ---------- End-game tab: step-by-step final scoring wizard ---------- */
+function groupsOf(i){ // all saved groups of player i across the 12 evaluations
+  const g = S.fin.g[i]; return Object.keys(g).reduce((a,k)=>a.concat(g[k]), []);
+}
+function bonusOf(len){ return S.variant ? ({4:3,5:5,6:7}[len]||0) : (len===6?6:0); } // R-E5 / R-V3
+function finCalc(i){
+  const st = S.fin.st[i], gs = groupsOf(i);
+  const g = sum(gs.map(sum)), bonus = sum(gs.map(x=>bonusOf(x.length)));
+  return {j:st.j, s:sum(st.left), g, bonus, total: st.j - sum(st.left) + g + bonus};
+}
+function viewEnd(){
+  const P = S.players, f = S.fin, step = STEPS[f.step];
+  let h = `<div class="card"><div class="mut">คะแนนสุดท้าย · ขั้น ${f.step+1}/${STEPS.length} <span class="ref">R-E1</span>${S.round<4||S.phase!=='scoring'?' · <span class="warn">ยังไม่ถึงจบเกม (รอบ 4 Phase 2)</span>':''}</div>
+  <div class="steps" style="margin-top:6px">${STEPS.map((s,k)=>`<button class="${k===f.step?'sel':''}" data-a="fStep" data-v="${k}" ${s.c?`style="border-bottom:4px solid ${s.c.h}"`:''}>${s.n}</button>`).join('')}</div></div>`;
+
+  if (step.k==='st'){
+    h += `<div class="card"><h3 style="margin-top:0">1. เท Storage <span class="ref">R-E2</span></h3><div class="mut">Joker เหลือ +1 ต่ออัน · tile/expansion เหลือ −ค่า pattern ต่ออัน (แตะค่าของแต่ละชิ้น)</div></div>`;
+    P.forEach((p,i)=>{ const st = f.st[i], lk = S.endDone[i];
+      h += `<div class="card pl" style="--c:${p.color}"><b>${nm(i)}</b>
+      <div class="row" style="margin-top:6px"><span class="grow">Joker เหลือ: <b>${st.j}</b> → <span class="pos">+${st.j}</span></span><button class="mini" data-a="fJ" data-v="${i}|-1" ${lk?'disabled':''}>−</button><button class="mini" data-a="fJ" data-v="${i}|1" ${lk?'disabled':''}>+</button></div>
+      <div class="mut" style="margin-top:6px">ของเหลือ (ค่า pattern):</div>
+      <div class="row" style="margin-top:4px">${lk?'':builderBtns('fL',i,[1,2,3,4,5,6])}<button class="mini" data-a="fLdel" data-v="${i}" ${lk||!st.left.length?'disabled':''}>⌫</button></div>
+      <div style="margin-top:4px">${st.left.length?st.left.join(' + ')+` = <span class="neg">−${sum(st.left)}</span>`:'<span class="mut">ไม่มี</span>'}</div></div>`;
+    });
+  } else if (step.k==='sum'){
+    h += `<div class="card"><h3 style="margin-top:0">สรุปคะแนนสุดท้าย</h3><table><tr><th></th><th>Joker</th><th>Storage</th><th>Group</th><th>Bonus</th><th>รวม</th></tr>
+    ${P.map((p,i)=>{ const c = finCalc(i); return `<tr><td>${nm(i)}</td><td>+${c.j}</td><td>−${c.s}</td><td>+${c.g}</td><td>+${c.bonus}</td><td><b>${c.total>=0?'+':''}${c.total}</b></td></tr>`; }).join('')}</table>
+    <div class="mut" style="margin-top:6px">Bonus: ${S.variant?'variant group 4:+3 · 5:+5 · 6:+7 <span class="ref">R-V3</span><span class="u">⚠</span>':'group 6 ใบ +6 <span class="ref">R-E5</span>'}</div></div>`;
+    P.forEach((p,i)=>{ const c = finCalc(i);
+      h += `<button class="pri" style="width:100%;margin-top:6px" data-a="endApply" data-v="${i}" ${S.endDone[i]?'disabled':''}>${S.endDone[i]?'✓ บันทึกแล้ว: '+esc(p.name):`บันทึก ${c.total>=0?'+':''}${c.total} ให้ ${esc(p.name)} → ${p.score+c.total}`}</button>`; });
+    const sorted = P.map((p,i)=>({i,s:p.score})).sort((a,b)=>b.s-a.s);
+    const top = sorted[0].s, winners = sorted.filter(x=>x.s===top), allDone = S.endDone.every(Boolean);
+    h += `<div class="card"><h3 style="margin-top:0">อันดับ ${allDone?'(สุดท้าย)':'(ชั่วคราว)'}</h3>
+    ${sorted.map((x,k)=>`<div class="row" style="padding:4px 0"><span style="width:28px">${k+1}.</span><b class="grow">${nm(x.i)}</b><span class="big" style="font-size:24px">${x.s}</span></div>`).join('')}
+    <div style="margin-top:10px;font-size:18px">${allDone?(winners.length>1?`🏆 เสมอ — <b>ชนะร่วมกัน:</b> ${winners.map(w=>nm(w.i)).join(', ')} <span class="ref">R-E3</span>`:`🏆 ผู้ชนะ: <b>${nm(winners[0].i)}</b> <span class="ref">R-E3</span>`):'<span class="mut">บันทึกให้ครบทุกคนเพื่อประกาศผู้ชนะ</span>'}</div>
+    <div class="mut" style="margin-top:6px">ไม่มี tiebreaker — แต้มเท่ากันสูงสุด = ชนะร่วม <span class="ref">R-E3</span></div>
+    ${allDone?'<button style="width:100%;margin-top:10px" data-a="shareRes">📋 คัดลอก/แชร์ผลเกม</button>':''}</div>`;
+  } else {
+    // one evaluation (a color or a pattern)
+    const isCol = !!step.c, v = isCol ? null : step.p.v;
+    h += `<div class="card"><h3 style="margin-top:0">${isCol?`<span class="sw" style="background:${step.c.h}"></span>สี${step.c.n}`:`Pattern ${step.p.s} ${step.p.n} (${v})`} <span class="ref">R-E4</span></h3>
+    <div class="mut">นับทุก group ที่ติดกัน ≥3 ใบของ${isCol?'สีนี้ (แต่ละใบ pattern ต่างกัน) — แตะค่า pattern ของแต่ละใบ':'pattern นี้ (แต่ละใบสีต่างกัน) — แตะ +1 ต่อใบ'} · group 2 ใบไม่นับ · กี่ group ก็ได้</div></div>`;
+    P.forEach((p,i)=>{
+      const saved = f.g[i][step.k] || [], bk = 'b'+i, b = D[bk] || (D[bk] = []), lk = S.endDone[i];
+      h += `<div class="card pl" style="--c:${p.color}"><b>${nm(i)}</b> <span class="mut">ขั้นนี้ +${sum(saved.map(g=>sum(g)+bonusOf(g.length)))}</span>
+      <div>${saved.map((g,gi)=>`<span class="gchip">${g.join('+')} = <b>${sum(g)}</b>${bonusOf(g.length)?` <span class="pos">+${bonusOf(g.length)} bonus</span>`:''}<button data-a="fGdel" data-v="${i}|${gi}" ${lk?'disabled':''}>✕</button></span>`).join('')||'<span class="mut">ยังไม่มี group</span>'}</div>
+      ${lk?'':`<div class="row" style="margin-top:8px">${isCol?builderBtns('fB',i,[1,2,3,4,5,6],b):`<button class="mini" data-a="fB" data-v="${i}|${v}" ${b.length>=6?'disabled':''}>+1 ใบ</button>`}<button class="mini" data-a="fBdel" data-v="${i}">⌫</button></div>
+      <div class="row" style="margin-top:6px"><span class="grow">${b.length?b.join('+')+' = '+sum(b)+` (${b.length} ใบ)`:'<span class="mut">กำลังสร้าง group…</span>'}</span><button class="pri" data-a="fGsave" data-v="${i}" ${b.length<3?'disabled':''}>เพิ่ม group</button></div>`}</div>`;
+    });
+  }
+  h += `<div class="row"><button class="grow" data-a="fStep" data-v="${f.step-1}" ${f.step===0?'disabled':''}>◀ ก่อนหน้า</button><button class="pri grow" data-a="fStep" data-v="${f.step+1}" ${f.step===STEPS.length-1?'disabled':''}>ถัดไป ▶</button></div>`;
+  return h;
+}
+
+/* ---------- Multi-device (optional, PeerJS) ---------- */
+let peer = null, conns = [], retry = null;
+function loadPeer(){
+  return new Promise((res, rej) => {
+    if (window.Peer) return res();
+    const s = document.createElement('script'); s.src = PEER_URL; s.onload = res; s.onerror = () => rej(new Error('load')); document.head.appendChild(s);
+  });
+}
+const pub = () => JSON.stringify(Object.assign({}, S, {hist:[]}));
+function broadcast(){ conns.forEach(c => { try{ if (c.open) c.send(pub()); }catch(e){} }); }
+function watchLink(){ return location.origin + location.pathname + '?watch=' + S.room; }
+async function host(fresh){
+  try{ await loadPeer(); }catch(e){ D.sync = 'err:โหลด PeerJS ไม่ได้ (ต้องต่อเน็ต)'; render(); return; }
+  if (peer){ try{ peer.destroy(); }catch(e){} }
+  if (!S.room || fresh) S.room = Math.random().toString(36).slice(2,8);
+  S.syncOn = true; save();
+  D.sync = 'connecting'; render();
+  peer = new Peer('azulqg-' + S.room);
+  peer.on('open', () => { D.sync = 'on'; render(); });
+  peer.on('connection', c => {
+    conns.push(c);
+    c.on('open', () => { c.send(pub()); render(); });
+    c.on('close', () => { conns = conns.filter(x => x !== c); render(); });
+  });
+  peer.on('error', e => { if (e.type === 'unavailable-id') host(true); else { D.sync = 'err:' + e.type; render(); } });
+}
+function stopHost(){ S.syncOn = false; save(); if (peer){ try{ peer.destroy(); }catch(e){} } peer = null; conns = []; D.sync = null; render(); }
+async function watch(code){
+  V = true; D.code = code; D.sync = 'connecting'; render();
+  try{ await loadPeer(); }catch(e){ D.sync = 'err:โหลด PeerJS ไม่ได้ (ต้องต่อเน็ต)'; render(); return; }
+  if (peer){ try{ peer.destroy(); }catch(e){} }
+  peer = new Peer();
+  const again = () => { clearTimeout(retry); retry = setTimeout(() => watch(code), 3000); };
+  peer.on('open', () => {
+    const c = peer.connect('azulqg-' + code, {reliable:true});
+    c.on('data', d => { try{ S = JSON.parse(d); D.sync = 'on'; render(); }catch(e){} });
+    c.on('close', () => { D.sync = 'lost'; render(); again(); });
+  });
+  peer.on('error', e => { D.sync = 'err:' + e.type; render(); again(); });
+}
+function syncModal(){
+  const st = D.sync || 'off';
+  let body;
+  if (st === 'on' && S.syncOn){
+    body = `<p class="ok"><b>📡 เปิดให้ดูอยู่</b> · ผู้ชม ${conns.filter(c=>c.open).length} เครื่อง</p>
+    <p>รหัสห้อง: <b style="font-size:24px;letter-spacing:2px">${esc(S.room)}</b></p>
+    <input type="text" readonly value="${esc(watchLink())}">
+    <div class="row" style="margin-top:8px"><button class="grow" data-a="copyLink">คัดลอกลิงก์</button>${navigator.share?'<button class="grow" data-a="shareLink">แชร์</button>':''}</div>
+    <p class="mut">เครื่องอื่นเปิดลิงก์นี้เพื่อดูคะแนน/ตาแบบสด (ดูอย่างเดียว แก้ไม่ได้) · ต้องต่ออินเทอร์เน็ต · เครื่องนี้ต้องเปิดแอปค้างไว้</p>
+    <button class="dng" style="width:100%" data-a="stopHost">ปิดการแชร์</button>`;
+  } else if (st === 'connecting'){ body = '<p>กำลังเปิดห้อง…</p>'; }
+  else if (st.startsWith('err')){ body = `<p class="warn">เชื่อมต่อไม่ได้: ${esc(st.slice(4))}</p><button class="pri" style="width:100%" data-a="startHost">ลองใหม่</button>`; }
+  else { body = `<p>ให้ผู้เล่นคนอื่นดูคะแนนบนมือถือตัวเอง (ดูอย่างเดียว)</p><p class="mut">ใช้ PeerJS (โหลดจาก unpkg เฉพาะตอนกดเปิด) · ข้อมูลส่งตรงระหว่างเครื่อง ผ่านเซิร์ฟเวอร์จับคู่ของ PeerJS</p><button class="pri" style="width:100%" data-a="startHost">เปิดห้อง</button>`; }
+  $('#modal').innerHTML = `<div class="modal"><div class="box"><h3 style="margin-top:0">ดูบนมือถือเครื่องอื่น</h3>${body}<button style="width:100%;margin-top:10px" data-a="mno">ปิด</button></div></div>`;
+}
+
+/* ---------- Render ---------- */
+function render(){
+  const app = $('#app');
+  if (V && !S){ app.innerHTML = `<div class="top"><h1>Azul QG · โหมดผู้ชม</h1></div><div class="card">${D.sync==='connecting'?'กำลังเชื่อมต่อห้อง '+esc(D.code)+'…':'<span class="warn">เชื่อมต่อไม่ได้ ('+esc(D.sync||'')+') — จะลองใหม่อัตโนมัติ · ตรวจว่าเครื่องกรรมการยังเปิดแอปอยู่</span>'}</div>`; return; }
+  if (!S){ app.innerHTML = viewSetup(); return; }
+  const tabs = [['game','🎯','เกม'],['score','➕','คะแนน'],['dispute','⚖','ตัดสิน'],['rules','📖','กฎ'],['end','🏁','จบเกม']];
+  const body = T==='game'?viewGame():T==='score'?viewScore():T==='dispute'?viewDispute():T==='rules'?viewRules():viewEnd();
+  app.innerHTML = `<div class="top"><h1>Azul QG · รอบ ${S.round}/4</h1>
+    ${V?'':`<button data-a="sync" title="ดูบนเครื่องอื่น">${S.syncOn&&D.sync==='on'?'📡':'📱'}</button>
+    <button data-a="undo" ${S.hist.length?'':'disabled'} title="Undo">↶</button>
+    <button class="dng" data-a="newgame">ใหม่</button>`}</div>
+    ${V?`<div class="banner">👀 โหมดผู้ชม (ดูอย่างเดียว) ${D.sync==='on'?'· <span class="ok">สด</span>':'· <span class="warn">ขาดการเชื่อมต่อ กำลังลองใหม่…</span>'}</div>`:''}
+    ${D.saveErr?'<div class="card warn">บันทึกลงเครื่องไม่ได้ (เบราว์เซอร์บล็อก storage) — เกมยังเล่นได้แต่รีเฟรชแล้วจะหาย</div>':''}
+    ${body}
+    <nav class="nav">${tabs.map(t=>`<button class="${T===t[0]?'on':''}" data-a="tab" data-v="${t[0]}">${t[1]}<br>${t[2]}</button>`).join('')}</nav>`;
+  if (V){ // viewers: disable everything that would change the game
+    app.querySelectorAll('[data-a]').forEach(b=>{ if (!VIEW_OK.includes(b.dataset.a)) b.disabled = true; });
+    app.querySelectorAll('[data-in]').forEach(b=>{ if (b.dataset.in!=='q') b.disabled = true; });
+  }
+}
+function confirmBox(msg, yes){ // simple confirm modal (no window.confirm)
+  $('#modal').innerHTML = `<div class="modal"><div class="box"><p>${msg}</p><div class="row"><button class="grow" data-a="mno">ยกเลิก</button><button class="pri grow" data-a="myes">ยืนยัน</button></div></div></div>`;
+  D.yes = yes;
+}
+function resultText(){
+  const sorted = S.players.map(p=>p).sort((a,b)=>b.score-a.score);
+  return "Azul: Queen's Garden — ผลเกม\n" + sorted.map((p,k)=>`${k+1}. ${p.name} ${p.score}`).join('\n');
+}
+async function copy(t){ try{ await navigator.clipboard.writeText(t); D.toast='คัดลอกแล้ว'; }catch(e){ D.toast='คัดลอกไม่ได้'; } }
+
+/* ---------- Actions (delegated clicks) ---------- */
+const VIEW_OK = ['tab','mno','myes','dzSel','dzT','dzCol','dzPat','dzReset','fStep'];
+const two = v => v.split('|');
+const ACT = {
+  tab: v => { T = v; render(); window.scrollTo(0,0); },
+  setN: v => { newDraft(+v); render(); },
+  setCol: v => { const [i,k] = v.split(',').map(Number); D.setup.cols[i] = k; render(); },
+  setStart: v => { D.setup.start = +v; render(); },
+  start: () => {
+    const s = D.setup, used = s.cols.slice(0,s.n);
+    if (new Set(used).size !== used.length){ $('#seterr').textContent = 'เลือกสีไม่ซ้ำกัน'; return; }
+    startGame();
+  },
+  join: () => { const c = (D.joinCode||'').trim().toLowerCase(); if (c){ history.replaceState(null,'','?watch='+encodeURIComponent(c)); watch(c); } },
+  endturn: () => commit(()=>nextTurn()),
+  pass: () => confirmBox(`ให้ ${esc(S.players[S.turn].name)} Pass? ${S.firstPassed?'':'<br><b>คนแรกที่ Pass: −1 และได้ first player marker</b> <span class="ref">R-D3</span>'}`, () => commit(()=>doPass(S.turn))),
+  buy: () => confirmBox(`${esc(S.players[S.turn].name)} ซื้อ garden expansion คว่ำจาก supply (7 ช่อง) จ่าย 6 แต้ม แล้วจบเทิร์น? <span class="ref">R-X1</span>`, () => commit(()=>{ addLog(S.turn,-6,'ซื้อ expansion จาก supply','R-X1'); nextTurn(); })),
+  pdAdd: v => { (D.pd = D.pd||[]).push(+two(v)[1]); render(); },
+  pdDel: () => { (D.pd||[]).pop(); render(); },
+  pdSkip: () => quick(()=>{ S.pendDiscard = null; D.pd = []; }),
+  pdGo: () => { const i = S.pendDiscard, pd = D.pd||[]; commit(()=>{ addLog(i, -sum(pd), `ทิ้งตอน Pass (${pd.join('+')})`, 'R-D2'); S.pendDiscard = null; }); D.pd = []; },
+  wheel: v => commit(()=>{ const w=S.wheel[S.round], k=w.indexOf(v); if(k>=0) w.splice(k,1); else if (w.length<3) w.push(v); }),
+  ptsMode: v => quick(()=>{ S.ptsMode = v; }),
+  tAdd: v => { const [i,id,val] = two(v); quick(()=>{ const t = tal(+i); (t.it[id] = t.it[id]||[]).push(+val); }); },
+  tDel: v => { const [i,id] = two(v); quick(()=>{ const t = tal(+i); (t.it[id]||[]).pop(); }); },
+  pav: v => { const [i,d] = two(v); quick(()=>{ const t = tal(+i); t.pav = Math.max(0, t.pav + (+d)); }); },
+  roundScore: v => { const i=+v, t=tal(i);
+    const w = sum(S.wheel[S.round].map(id=>itemPoints(id, t.it[id]||[])));
+    commit(()=>{ if(w) addLog(i, w, `แต้มตาม wheel รอบ ${S.round}`, 'R-W2'); if(t.pav) addLog(i, t.pav, `Pavilion ×${t.pav}`, 'R-W4'); S.roundDone[i]=true; }); },
+  nextRound: () => { commit(()=>{ S.round++; S.phase='play'; S.turn=S.first; S.passed=S.players.map(()=>false); S.firstPassed=false; S.roundDone=S.players.map(()=>false); S.pendDiscard=null; }); window.scrollTo(0,0); }, // R-R3
+  toEnd: () => { T='end'; render(); window.scrollTo(0,0); },
+  scP: v => { D.sc.p=+v; render(); },
+  scK: v => { const x=PRESETS.find(p=>p.k===v); D.sc.key=v; D.sc.sign=x.d<0?-1:1; D.sc.amt=String(Math.abs(x.d)); render(); },
+  scS: v => { D.sc.sign=+v; render(); },
+  scN: v => { D.sc.amt=v; render(); },
+  scGo: () => { const d=D.sc, n=parseInt(d.amt,10)||0; if(!n) return; const x=PRESETS.find(p=>p.k===d.key);
+    const reason = d.key==='oth' ? (d.label.trim()||'อื่น ๆ') : x.t;
+    commit(()=>addLog(d.p, d.sign*n, reason, x.r)); },
+  undo: () => undo(),
+  // dispute checker
+  dzSel: v => { dz().sel = v; render(); },
+  dzT: v => { const z = dz(); z[z.sel] = {t:v}; render(); },
+  dzCol: v => { const z = dz(), c = z[z.sel]; c.col = v; if (z.sel!=='c') c.t='hex'; render(); },
+  dzPat: v => { const z = dz(), c = z[z.sel]; c.pat = v; if (z.sel!=='c') c.t='hex'; render(); },
+  dzReset: () => { D.dz = null; render(); },
+  // final scoring wizard
+  fStep: v => { const k = Math.max(0, Math.min(STEPS.length-1, +v)); if (V){ S.fin.step = k; render(); } else quick(()=>{ S.fin.step = k; }); window.scrollTo(0,0); },
+  fJ: v => { const [i,d] = two(v); quick(()=>{ const st = S.fin.st[+i]; st.j = Math.max(0, st.j + (+d)); }); },
+  fL: v => { const [i,val] = two(v); quick(()=>{ S.fin.st[+i].left.push(+val); }); },
+  fLdel: v => quick(()=>{ S.fin.st[+v].left.pop(); }),
+  fB: v => { const [i,val] = two(v), b = D['b'+i] || (D['b'+i]=[]); if (b.length<6) b.push(+val); render(); },
+  fBdel: v => { (D['b'+v]||[]).pop(); render(); },
+  fGsave: v => { const i=+v, b = D['b'+i]||[], k = STEPS[S.fin.step].k; if (b.length<3) return;
+    quick(()=>{ (S.fin.g[i][k] = S.fin.g[i][k]||[]).push(b.slice()); }); D['b'+i] = []; render(); },
+  fGdel: v => { const [i,gi] = two(v), k = STEPS[S.fin.step].k; quick(()=>{ S.fin.g[+i][k].splice(+gi,1); }); },
+  endApply: v => { const i=+v, c=finCalc(i);
+    commit(()=>{ if(c.j) addLog(i,c.j,'Joker เหลือ ×'+c.j,'R-E2'); if(c.s) addLog(i,-c.s,'ของเหลือใน storage','R-E2'); if(c.g) addLog(i,c.g,'แต้ม group ≥3','R-E4'); if(c.bonus) addLog(i,c.bonus,S.variant?'Bonus group (variant)':'Bonus group 6','R-E5'); S.endDone[i]=true; }); },
+  shareRes: async () => { const t = resultText(); if (navigator.share){ try{ await navigator.share({text:t}); }catch(e){} } else { await copy(t); render(); } },
+  // multi-device
+  sync: () => syncModal(),
+  startHost: () => { host(false).then(()=>syncModal()); syncModal(); },
+  stopHost: () => { stopHost(); $('#modal').innerHTML=''; },
+  copyLink: async () => { await copy(watchLink()); syncModal(); },
+  shareLink: async () => { try{ await navigator.share({title:"Azul QG", url:watchLink()}); }catch(e){} },
+  newgame: () => confirmBox('เริ่มเกมใหม่? ข้อมูลเกมปัจจุบันจะถูกลบทั้งหมด (Undo ไม่ได้)', () => { if (S && S.syncOn) stopHost(); S=null; D={}; try{localStorage.removeItem(KEY);}catch(e){} T='game'; render(); }),
+  mno: () => { $('#modal').innerHTML=''; },
+  myes: () => { $('#modal').innerHTML=''; const f=D.yes; D.yes=null; if(f) f(); }
+};
+document.addEventListener('click', ev => {
+  const el = ev.target.closest('[data-a]'); if (!el || el.disabled) return;
+  if (V && !VIEW_OK.includes(el.dataset.a)) return;   // viewer cannot change the game
+  ACT[el.dataset.a] && ACT[el.dataset.a](el.dataset.v, el);
+});
+/* Inputs: update drafts without re-rendering (keeps keyboard focus) */
+document.addEventListener('input', ev => {
+  const el = ev.target, k = el.dataset.in; if (!k) return;
+  if (k==='setupName') D.setup.names[+el.dataset.i] = el.value;
+  else if (k==='variant') D.setup.variant = el.checked;
+  else if (k==='joinCode') D.joinCode = el.value;
+  else if (k==='scAmt') D.sc.amt = el.value;
+  else if (k==='scLabel') D.sc.label = el.value;
+  else if (k==='ipts') { S.itemPts[el.dataset.id] = el.value; save(); }
+  else if (k==='q') { D.q = el.value; render(); const i=document.querySelector('[data-in=q]'); if(i){ i.focus(); i.setSelectionRange(i.value.length,i.value.length);} }
+});
+document.addEventListener('change', ev => { // refresh derived totals after editing a number
+  const k = ev.target.dataset.in; if (k==='scAmt' || k==='ipts') render();
+});
+
+/* ---------- Boot ---------- */
+const watchCode = new URLSearchParams(location.search).get('watch');
+if (watchCode) watch(watchCode.toLowerCase());
+else {
+  S = load();
+  if (S && (!S.players || !S.hist || !S.fin)) S = null; // ignore corrupt/old saved data
+  render();
+  if (S && S.syncOn) host(false);   // re-open the room after a reload so viewers reconnect
+}
+</script>
+</body>
+</html>
